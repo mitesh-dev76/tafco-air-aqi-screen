@@ -35,13 +35,21 @@ async function fetchAll() {
   const records = [];
   for (let offset = 0; ; offset += PAGE) {
     const url = `${RESOURCE}?api-key=${KEY}&format=json&limit=${PAGE}&offset=${offset}`;
-    let res;
-    for (let attempt = 1; ; attempt++) {
-      res = await fetch(url);
-      if (res.ok || attempt === 4) break;
-      await Bun.sleep(attempt * 5000);
+    // data.gov.in is often slow or drops connections: retry timeouts, network errors and 5xx/429.
+    let res, lastError;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        res = await fetch(url, { signal: AbortSignal.timeout(90_000) });
+        if (res.ok) break;
+        lastError = `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`;
+      } catch (err) {
+        res = undefined;
+        lastError = `${err.name}: ${err.message}`;
+      }
+      console.warn(`data.gov.in offset ${offset}, attempt ${attempt} failed (${lastError})`);
+      await Bun.sleep(attempt * 10_000);
     }
-    if (!res.ok) throw new Error(`data.gov.in ${res.status}: ${await res.text()}`);
+    if (!res?.ok) throw new Error(`data.gov.in unreachable after retries: ${lastError}`);
     const json = await res.json();
     const page = json.records ?? [];
     records.push(...page);
