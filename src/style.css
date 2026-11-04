@@ -76,6 +76,7 @@ html, body {
   opacity: 0; transition: opacity 0.5s ease-out;
 }
 .row.show { opacity: 1; }
+.row.pinned { margin-top: 48px; } /* collapses with the 29px row gap, so the gap above is 48px */
 .city {
   position: absolute; left: 0; top: 18px;
   font-size: 56px; font-weight: 600; letter-spacing: -1px; line-height: 1;
@@ -104,7 +105,7 @@ html, body {
 }
 
 .status {
-  position: absolute; left: 64px; right: 64px; top: 1420px;
+  position: absolute; left: 64px; right: 64px; top: 1630px;
   font-size: 22px; color: #9a9a9a; opacity: 0; transition: opacity .5s;
 }
 .status.show { opacity: 1; }

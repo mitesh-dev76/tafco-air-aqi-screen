@@ -49,16 +49,22 @@ async function fetchCpcb() {
   if (!res.ok) throw new Error(`CPCB data ${res.status}`);
   const data = await res.json();
   return data.cities
-    .filter((c) => c.ug > 0 && c.stations >= MIN_STATIONS)
+    .filter((c) => c.ug > 0)
     .map((c) => ({ ...c, time: data.updated, source: "CPCB" }));
 }
+
+// Always shown as a fifth row, below the four ranked cities.
+const PINNED_CITY = "Ahmedabad";
 
 // AQI shown while the dots count up; ends exactly on the city's AQI.
 const aqiAt = (city, shown) => (city.ug ? Math.round((city.aqi * shown) / city.ug) : city.aqi);
 
-// Worst two Indian cities, then the worst Indian city in a cleaner category, then the cleanest foreign city.
+// Worst two Indian cities, then the worst Indian city in a cleaner category, then the cleanest
+// foreign city; the pinned city is left out here so it never appears twice.
 function pickCities(india, world) {
-  const ranked = [...india].sort((a, b) => b.aqi - a.aqi);
+  const ranked = india
+    .filter((c) => c.stations >= MIN_STATIONS && c.name !== PINNED_CITY)
+    .sort((a, b) => b.aqi - a.aqi);
   const [first, second] = ranked;
   const secondCat = catOf(second.aqi)[1];
   const third = ranked.slice(2).find((c) => catOf(c.aqi)[1] !== secondCat) ?? ranked[ranked.length - 1];
@@ -190,6 +196,9 @@ async function run() {
   try {
     const [india, world] = await Promise.all([fetchCpcb(), fetchPm(WORLD)]);
     cities = pickCities(india, world);
+    const pinned = india.find((c) => c.name === PINNED_CITY);
+    if (pinned) cities.push({ ...pinned, pinned: true });
+    else console.warn(`${PINNED_CITY} has no CPCB reading this hour`);
   } catch (err) {
     status.textContent = "Live air quality data is unavailable right now. Please try again shortly.";
     status.classList.add("show");
@@ -199,7 +208,10 @@ async function run() {
 
   const rowsEl = document.getElementById("rows");
   const rows = cities.map(buildRow);
-  rows.forEach((r) => rowsEl.appendChild(r.row));
+  rows.forEach((r) => {
+    r.row.classList.toggle("pinned", !!r.city.pinned);
+    rowsEl.appendChild(r.row);
+  });
 
   await wait(Math.max(0, T_ROWS - (performance.now() - t0)));
   for (const r of rows) { r.row.classList.add("show"); await wait(ROW_GAP); }
