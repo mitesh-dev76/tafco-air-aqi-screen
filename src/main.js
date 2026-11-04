@@ -1,8 +1,9 @@
 import { setupDownload } from "./video.js";
+import { CPCB_URL } from "./config.js";
 
-// Indian cities: every CPCB station in India, aggregated hourly into cpcb.json by
-// scripts/fetch-cpcb.js (GitHub Action). Foreign city: live PM2.5 from Open-Meteo.
-const CPCB_JSON = "./cpcb.json";
+// Indian cities: every CPCB station in India, aggregated by cpcb-api/lib/cpcb.js
+// (Vercel function in Mumbai). Foreign city: live PM2.5 from Open-Meteo.
+const CPCB_JSON = CPCB_URL || "./cpcb.json";
 // Only cities CPCB monitors with several stations (Delhi, Mumbai, Lucknow, Pune…),
 // which keeps single-station small towns out of the story.
 const MIN_STATIONS = 3;
@@ -41,7 +42,7 @@ async function fetchPm(list) {
 }
 
 async function fetchCpcb() {
-  const res = await fetch(CPCB_JSON, { cache: "no-store" });
+  const res = await fetch(CPCB_JSON);
   if (!res.ok) throw new Error(`CPCB data ${res.status}`);
   const data = await res.json();
   return data.cities
