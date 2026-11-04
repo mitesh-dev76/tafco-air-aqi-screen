@@ -1,5 +1,8 @@
 import { setupDownload } from "./video.js";
 import { CPCB_URL } from "./config.js";
+import { logoSvg } from "./logo.js";
+
+document.getElementById("logo").innerHTML = logoSvg();
 
 // Indian cities: every CPCB station in India, aggregated by cpcb-api/lib/cpcb.js
 // (Vercel function in Mumbai). Foreign city: live PM2.5 from Open-Meteo.

@@ -38,15 +38,13 @@ html, body {
   display: flex; justify-content: space-between; align-items: flex-end;
 }
 .logo {
-  font-size: 64px; font-weight: 500; letter-spacing: 1px; line-height: 1;
-  display: flex; align-items: flex-end;
+  width: 219px; height: 46px; /* Primary.svg is 143x30 */
   opacity: 0; color: #bdbdbd;
   animation: logoIn 0.9s ease-out 0.15s forwards;
 }
-.lambda { display: inline-block; transform: scaleX(0.95); }
+.logo svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .logo-dot {
-  width: 13px; height: 13px; border-radius: 50%; background: var(--red);
-  margin: 0 0 4px 3px; transform: scale(0);
+  transform-box: fill-box; transform-origin: center; transform: scale(0);
   animation: pop 0.38s cubic-bezier(.3,1.6,.5,1) 1.1s forwards;
 }
 .date {
@@ -112,8 +110,8 @@ html, body {
 .status.show { opacity: 1; }
 
 @keyframes fadeIn { to { opacity: 1; } }
-@keyframes logoIn { 0% { opacity: 0; color: #e6e6e6; } 50% { opacity: 1; color: #bdbdbd; } 100% { opacity: 1; color: var(--ink); } }
-@keyframes headIn { 0% { opacity: 0; color: #cfcfcf; } 100% { opacity: 1; color: var(--ink); } }
+@keyframes logoIn { 0% { opacity: 0; color: #e6e6e6; } 50% { opacity: 1; color: #bdbdbd; } 100% { opacity: 1; color: #0a0a0a; } }
+@keyframes headIn { 0% { opacity: 0; color: #cfcfcf; } 100% { opacity: 1; color: #0a0a0a; } }
 @keyframes pop { to { transform: scale(1); } }
 
 /* Download button: outside the 1080x1920 frame, so it never appears in the video */

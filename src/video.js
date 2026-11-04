@@ -2,6 +2,9 @@
 // (same layout, data and timings as the live page), encodes it to H.264 with the
 // browser's WebCodecs VideoEncoder, and muxes it into an .mp4 with mp4-muxer.
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import { LOGO_H, LOGO_DOT, LOGO_PATHS } from "./logo.js";
+
+const LOGO_PATH2D = LOGO_PATHS.map((d) => new Path2D(d));
 
 const W = 1080, H = 1920, FPS = 30, HOLD_MS = 2000;
 const CODECS = ["avc1.640028", "avc1.4d0028", "avc1.42002a"];
@@ -150,7 +153,6 @@ function buildScene({ rows, rate, max, timing, aqiAt, BOX_W, BOX_H, FADE_MS, DRO
   const screen = document.getElementById("screen");
   const box = measure(screen);
   const logo = box(screen.querySelector(".logo"));
-  const logoDot = box(screen.querySelector(".logo-dot"));
   const date = box(screen.querySelector(".date"));
   const dateText = screen.querySelector(".date").textContent;
   const head = box(screen.querySelector(".headline"));
@@ -177,19 +179,24 @@ function buildScene({ rows, rate, max, timing, aqiAt, BOX_W, BOX_H, FADE_MS, DRO
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, W, H);
 
-    // Logo: 0.15s + 0.9s, fade in then grey -> black; red dot pops at 1.1s.
+    // Logo (Primary.svg paths): 0.15s + 0.9s, fade in then grey -> black; orange dot pops at 1.1s.
+    const k = logo.h / LOGO_H;
     const kl = prog(t, 150, 900);
     if (kl > 0) {
+      ctx.save();
+      ctx.translate(logo.x, logo.y);
+      ctx.scale(k, k);
       ctx.globalAlpha = clamp01(kl * 2);
-      const color = kl < 0.5 ? mix("#e6e6e6", "#bdbdbd", easeOut(kl * 2)) : mix("#bdbdbd", "#111111", easeOut((kl - 0.5) * 2));
-      text(ctx, "TΛFCO", logo.x, logo.y, logo.h, "500 64px Outfit, system-ui, sans-serif", color, 1);
+      ctx.fillStyle = kl < 0.5 ? mix("#e6e6e6", "#bdbdbd", easeOut(kl * 2)) : mix("#bdbdbd", "#0a0a0a", easeOut((kl - 0.5) * 2));
+      for (const p of LOGO_PATH2D) ctx.fill(p);
+      ctx.restore();
     }
     const kd = prog(t, 1100, 380);
     if (kd > 0) {
       ctx.globalAlpha = 1;
-      ctx.fillStyle = "#d8443a";
+      ctx.fillStyle = LOGO_DOT.fill;
       ctx.beginPath();
-      ctx.arc(logoDot.x + logoDot.w / 2, logoDot.y + logoDot.h / 2, 6.5 * Math.max(0, easeOutBack(kd)), 0, Math.PI * 2);
+      ctx.arc(logo.x + LOGO_DOT.cx * k, logo.y + LOGO_DOT.cy * k, LOGO_DOT.r * k * Math.max(0, easeOutBack(kd)), 0, Math.PI * 2);
       ctx.fill();
     }
 
