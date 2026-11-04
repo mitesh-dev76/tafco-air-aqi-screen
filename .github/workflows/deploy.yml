@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "20 * * * *" # hourly, shortly after CPCB's hourly update
   workflow_dispatch:
 
 permissions:
@@ -23,7 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
       - run: bun run build
+      # If CPCB is unreachable this step fails and the previous deployment stays live.
+      - run: bun scripts/fetch-cpcb.js dist/cpcb.json
+        env:
+          CPCB_API_KEY: ${{ secrets.CPCB_API_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

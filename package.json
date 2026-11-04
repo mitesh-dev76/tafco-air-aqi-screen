@@ -5,6 +5,11 @@
   "scripts": {
     "dev": "bun ./index.html",
     "build": "bun build ./index.html --outdir ./dist --minify",
+    "data": "bun scripts/fetch-cpcb.js dist/cpcb.json",
+    "start": "bun run build && bun run data && bunx serve dist",
     "preview": "bunx serve dist"
+  },
+  "dependencies": {
+    "mp4-muxer": "5.2.1"
   }
 }

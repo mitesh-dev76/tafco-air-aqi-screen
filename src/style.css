@@ -115,3 +115,15 @@ html, body {
 @keyframes logoIn { 0% { opacity: 0; color: #e6e6e6; } 50% { opacity: 1; color: #bdbdbd; } 100% { opacity: 1; color: var(--ink); } }
 @keyframes headIn { 0% { opacity: 0; color: #cfcfcf; } 100% { opacity: 1; color: var(--ink); } }
 @keyframes pop { to { transform: scale(1); } }
+
+/* Download button: outside the 1080x1920 frame, so it never appears in the video */
+.download {
+  position: fixed; right: 20px; bottom: 20px; z-index: 10;
+  font: 500 15px "Outfit", system-ui, sans-serif;
+  padding: 12px 20px; border: 0; border-radius: 999px;
+  background: #111; color: #fff; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  opacity: 0; transform: translateY(8px); transition: opacity .4s, transform .4s;
+}
+.download.show { opacity: 1; transform: none; }
+.download:disabled { cursor: progress; background: #444; }

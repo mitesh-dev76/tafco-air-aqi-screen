@@ -1,16 +1,11 @@
-// Live PM2.5 from Open-Meteo Air Quality API (CAMS model, no API key, CORS enabled).
+import { setupDownload } from "./video.js";
+
+// Indian cities: every CPCB station in India, aggregated hourly into cpcb.json by
+// scripts/fetch-cpcb.js (GitHub Action). Foreign city: live PM2.5 from Open-Meteo.
+const CPCB_JSON = "./cpcb.json";
 const API = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
-// Candidate pools. Indian cities are ranked live; the cleanest foreign city is picked live.
-// Pakistan is intentionally excluded from the foreign pool.
-const INDIA = [
-  ["Delhi", 28.6139, 77.209], ["Gurugram", 28.4595, 77.0266], ["Noida", 28.5355, 77.391],
-  ["Ghaziabad", 28.6692, 77.4538], ["Lucknow", 26.8467, 80.9462], ["Kanpur", 26.4499, 80.3319],
-  ["Patna", 25.5941, 85.1376], ["Kolkata", 22.5726, 88.3639], ["Mumbai", 19.076, 72.8777],
-  ["Ahmedabad", 23.0225, 72.5714], ["Jaipur", 26.9124, 75.7873], ["Chandigarh", 30.7333, 76.7794],
-  ["Ludhiana", 30.901, 75.8573], ["Pune", 18.5204, 73.8567], ["Hyderabad", 17.385, 78.4867],
-  ["Bengaluru", 12.9716, 77.5946], ["Chennai", 13.0827, 80.2707], ["Gangtok", 27.3389, 88.6065],
-];
+// Clean-air pool for the foreign "Good" city. Pakistan is intentionally excluded.
 const WORLD = [
   ["Reykjavik", 64.1466, -21.9426], ["Wellington", -41.2866, 174.7756], ["Hobart", -42.8821, 147.3272],
   ["Honolulu", 21.3069, -157.8583], ["Helsinki", 60.1699, 24.9384], ["Oslo", 59.9139, 10.7522],
@@ -42,11 +37,19 @@ async function fetchPm(list) {
     .map((c) => ({ ...c, ug: Math.round(c.ug), aqi: aqiOf(Math.round(c.ug)) }));
 }
 
+async function fetchCpcb() {
+  const res = await fetch(CPCB_JSON, { cache: "no-store" });
+  if (!res.ok) throw new Error(`CPCB data ${res.status}`);
+  const data = await res.json();
+  return data.cities.filter((c) => c.ug > 0).map((c) => ({ ...c, time: data.updated, source: "CPCB" }));
+}
+
+// AQI shown while the dots count up; ends exactly on the city's AQI.
+const aqiAt = (city, shown) => (city.ug ? Math.round((city.aqi * shown) / city.ug) : city.aqi);
+
 // Worst two Indian cities, then the worst Indian city in a cleaner category, then the cleanest foreign city.
 function pickCities(india, world) {
-  // Neighbouring cities can share one model grid cell; keep only one city per identical reading.
-  const ranked = [...india].sort((a, b) => b.aqi - a.aqi)
-    .filter((c, i, arr) => i === 0 || c.ug !== arr[i - 1].ug);
+  const ranked = [...india].sort((a, b) => b.aqi - a.aqi);
   const [first, second] = ranked;
   const secondCat = catOf(second.aqi)[1];
   const third = ranked.slice(2).find((c) => catOf(c.aqi)[1] !== secondCat) ?? ranked[ranked.length - 1];
@@ -143,7 +146,7 @@ function buildRow(city) {
 
 function draw(r, u, now) {
   const shown = Math.min(u, r.city.ug);
-  r.num.textContent = aqiOf(Math.floor(shown));
+  r.num.textContent = aqiAt(r.city, Math.floor(shown));
   r.ug.textContent = `≈ ${Math.floor(shown)} µg/m³`;
   const { ctx } = r;
   ctx.clearRect(0, 0, BOX_W, BOX_H);
@@ -176,7 +179,7 @@ async function run() {
   const status = document.getElementById("status");
   let cities;
   try {
-    const [india, world] = await Promise.all([fetchPm(INDIA), fetchPm(WORLD)]);
+    const [india, world] = await Promise.all([fetchCpcb(), fetchPm(WORLD)]);
     cities = pickCities(india, world);
   } catch (err) {
     status.textContent = "Live air quality data is unavailable right now. Please try again shortly.";
@@ -204,9 +207,16 @@ async function run() {
   };
   requestAnimationFrame(frame);
 
-  const updated = cities[0].time ? ` · updated ${cities[0].time.replace("T", " ")} local` : "";
-  status.textContent = `Live PM2.5: Open-Meteo / Copernicus CAMS · AQI: India CPCB scale${updated}`;
-  setTimeout(() => status.classList.add("show"), (max / rate) + 600);
+  const ist = new Date(cities[0].time).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const updated = ` · CPCB updated ${ist} IST`;
+  status.textContent = `India: CPCB stations (data.gov.in) · ${cities[3].name}: Open-Meteo / CAMS · AQI: CPCB scale${updated}`;
+  setTimeout(() => {
+    status.classList.add("show");
+    setupDownload({
+      rows, rate, max, aqiAt, BOX_W, BOX_H, FADE_MS, DROP,
+      timing: { T_ROWS, ROW_GAP, COUNT_DELAY },
+    });
+  }, (max / rate) + 600);
 }
 
 run();

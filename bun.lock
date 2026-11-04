@@ -1,0 +1,19 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "tafco-aqi-screen",
+      "dependencies": {
+        "mp4-muxer": "5.2.1",
+      },
+    },
+  },
+  "packages": {
+    "@types/dom-webcodecs": ["@types/dom-webcodecs@0.1.19", "", {}, "sha512-+yFUIDUaASFz0vQpWBErPxun/Lb+F0TdrlTsj50gm7K797YzEx2TmV6fEiwciHyFNghlZYPgQXH5qRcwMHcJFQ=="],
+
+    "@types/wicg-file-system-access": ["@types/wicg-file-system-access@2020.9.8", "", {}, "sha512-ggMz8nOygG7d/stpH40WVaNvBwuyYLnrg5Mbyf6bmsj/8+gb6Ei4ZZ9/4PNpcPNTT8th9Q8sM8wYmWGjMWLX/A=="],
+
+    "mp4-muxer": ["mp4-muxer@5.2.1", "", { "dependencies": { "@types/dom-webcodecs": "^0.1.6", "@types/wicg-file-system-access": "^2020.9.5" } }, "sha512-O9eNqyzUivPJvNinPzBtEnPo7epPeYrryiCB+/+3/ktIXgTIeIB7o8tC+5i+8Zi3JthKGDws9jx7ceIY3PKhXw=="],
+  }
+}
