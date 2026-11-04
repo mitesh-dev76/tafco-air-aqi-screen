@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAFCO Air</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div id="stage">
+    <main id="screen">
+      <header class="top">
+        <div class="logo">T<span class="lambda">Λ</span>FCO<span class="logo-dot"></span></div>
+        <div class="date" id="date"></div>
+      </header>
+
+      <h1 class="headline">Today's air,<br />dot by dot<span class="red">.</span></h1>
+      <p class="sub">
+        PM<sub>2.5</sub> is too fine to see, so we draw it. Each dot is 1&#8239;µg of PM<sub>2.5</sub> in a cubic metre of air.
+      </p>
+
+      <section id="rows"></section>
+      <p class="status" id="status">Fetching live air quality…</p>
+    </main>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
