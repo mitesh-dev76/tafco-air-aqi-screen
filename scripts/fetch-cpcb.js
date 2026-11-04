@@ -12,12 +12,17 @@ if (!KEY) {
   process.exit(1);
 }
 
-// CPCB National AQI breakpoints (24-hour average, µg/m³), linear within each band.
+// This dataset's min/avg/max values are CPCB AQI *sub-indices* (0-500) per pollutant,
+// not concentrations: every pollutant is capped at 500 and CO runs 1-200.
+// CPCB rule: station AQI = highest sub-index, needs >= 3 pollutants incl. PM2.5 or PM10.
+const MIN_POLLUTANTS = 3;
+
+// CPCB PM2.5 breakpoints (24-hour, µg/m³), used to turn the PM2.5 sub-index back into
+// µg/m³ for the dots ("each dot is 1 µg of PM2.5").
 const PM25 = [[0, 30, 0, 50], [30, 60, 50, 100], [60, 90, 100, 200], [90, 120, 200, 300], [120, 250, 300, 400], [250, 380, 400, 500]];
-const PM10 = [[0, 50, 0, 50], [50, 100, 50, 100], [100, 250, 100, 200], [250, 350, 200, 300], [350, 430, 300, 400], [430, 510, 400, 500]];
-const subIndex = (bands, c) => {
-  for (const [cl, ch, il, ih] of bands) if (c <= ch) return il + ((c - cl) * (ih - il)) / (ch - cl);
-  return 500;
+const pm25FromIndex = (i) => {
+  for (const [cl, ch, il, ih] of PM25) if (i <= ih) return cl + ((i - il) * (ch - cl)) / (ih - il);
+  return 380;
 };
 
 // "04-11-2026 16:00:00" (IST) -> Date
@@ -52,22 +57,22 @@ if (!records.length) throw new Error("data.gov.in returned no records");
 const stations = new Map();
 for (const r of records) {
   const key = `${r.state}|${r.city}|${r.station}`;
-  const s = stations.get(key) ?? { state: r.state, city: r.city, station: r.station, time: parseTime(r.last_update) };
+  const s = stations.get(key) ?? { state: r.state, city: r.city, station: r.station, time: parseTime(r.last_update), sub: {} };
   const v = Number(r.avg_value);
-  if (Number.isFinite(v)) {
-    if (r.pollutant_id === "PM2.5") s.pm25 = v;
-    if (r.pollutant_id === "PM10") s.pm10 = v;
-  }
+  if (r.avg_value !== "NA" && Number.isFinite(v)) s.sub[r.pollutant_id] = v;
   stations.set(key, s);
 }
 
-// Drop stations that stopped reporting; station AQI = worst of PM2.5 / PM10 sub-index.
+// Drop stations that stopped reporting or don't meet CPCB's AQI rule.
 const newest = Math.max(...[...stations.values()].map((s) => s.time?.getTime() ?? 0));
-const fresh = [...stations.values()].filter(
-  (s) => s.time && newest - s.time.getTime() <= STALE_HOURS * 3600e3 && s.pm25 !== undefined,
-);
+const fresh = [...stations.values()].filter((s) => {
+  const ids = Object.keys(s.sub);
+  return s.time && newest - s.time.getTime() <= STALE_HOURS * 3600e3 &&
+    ids.length >= MIN_POLLUTANTS && "PM2.5" in s.sub;
+});
 for (const s of fresh) {
-  s.aqi = Math.max(subIndex(PM25, s.pm25), s.pm10 !== undefined ? subIndex(PM10, s.pm10) : 0);
+  s.aqi = Math.max(...Object.values(s.sub));
+  s.pm25 = pm25FromIndex(s.sub["PM2.5"]);
 }
 
 // City value = average of its stations (the way CPCB's city bulletin aggregates).

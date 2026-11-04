@@ -3,6 +3,9 @@ import { setupDownload } from "./video.js";
 // Indian cities: every CPCB station in India, aggregated hourly into cpcb.json by
 // scripts/fetch-cpcb.js (GitHub Action). Foreign city: live PM2.5 from Open-Meteo.
 const CPCB_JSON = "./cpcb.json";
+// Only cities CPCB monitors with several stations (Delhi, Mumbai, Lucknow, Pune…),
+// which keeps single-station small towns out of the story.
+const MIN_STATIONS = 3;
 const API = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
 // Clean-air pool for the foreign "Good" city. Pakistan is intentionally excluded.
@@ -41,7 +44,9 @@ async function fetchCpcb() {
   const res = await fetch(CPCB_JSON, { cache: "no-store" });
   if (!res.ok) throw new Error(`CPCB data ${res.status}`);
   const data = await res.json();
-  return data.cities.filter((c) => c.ug > 0).map((c) => ({ ...c, time: data.updated, source: "CPCB" }));
+  return data.cities
+    .filter((c) => c.ug > 0 && c.stations >= MIN_STATIONS)
+    .map((c) => ({ ...c, time: data.updated, source: "CPCB" }));
 }
 
 // AQI shown while the dots count up; ends exactly on the city's AQI.
